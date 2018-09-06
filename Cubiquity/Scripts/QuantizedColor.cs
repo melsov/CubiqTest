@@ -173,5 +173,10 @@ namespace Cubiquity
 
 			color = (color & ~mask) | bitsToSet;
 		}
-	}
+
+        public override string ToString()
+        {
+            return string.Format("QColor: r {0}, g {1}, b {2} a: {3}", red, green, blue, alpha);
+        }
+    }
 }

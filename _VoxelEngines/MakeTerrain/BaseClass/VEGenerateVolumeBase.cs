@@ -9,7 +9,7 @@ using System.IO;
 
 namespace VE.VoxelGen
 {
-    public class VEGenerateVolume : MonoBehaviour
+    public class VEGenerateVolumeBase : MonoBehaviour
     {
         
 
@@ -17,15 +17,15 @@ namespace VE.VoxelGen
         static void GenerateVolume()
         {
             var selected = Selection.activeGameObject;
-            VEGenerateVolume genVolume = null;
+            VEGenerateVolumeBase genVolume = null;
             if (selected)
             {
-                genVolume = selected.GetComponent<VEGenerateVolume>();
+                genVolume = selected.GetComponent<VEGenerateVolumeBase>();
             }
 
             if(!genVolume)
             {
-                genVolume = FindObjectOfType<VEGenerateVolume>();
+                genVolume = FindObjectOfType<VEGenerateVolumeBase>();
             }
 
             if(!genVolume)
@@ -46,19 +46,40 @@ namespace VE.VoxelGen
         string volumeName = "AwesomeCubeVolumeName";
 
         [SerializeField]
-        float noiseScale = 42f;
+        protected float noiseScale = 42f;
 
-        [SerializeField, Range(-2f, 2f)]
-        private float isSolidThreshhold;
+        [SerializeField, Range(0f, 1f)]
+        protected float isSolidThreshhold;
 
         [SerializeField]
-        Vector3i size = new Vector3i(64, 64, 64);
+        protected Vector3i size = new Vector3i(64, 64, 64);
 
         [SerializeField, Header("Unset this if you haven't changed your generation code. (Saves time.)")]
         bool alwaysRegenerateVolume = true;
 
+        [SerializeField, Range(0f, 1.8f)]
+        protected float snoise2DScale = .6f;
+
+        string _saveLocation;
         string saveLocation {
-            get { return Paths.voxelDatabases + "/" + volumeName + ".vdb"; }
+            get {
+                if (_saveLocation == null)
+                {
+                    _saveLocation = Paths.voxelDatabases + "/" + volumeName + ".vdb";
+                }
+                return _saveLocation;
+            }
+        }
+
+        VoxelTypeToColor _voxelTypeToColor;
+        protected VoxelTypeToColor voxelTypeToColor {
+            get {
+                if(!_voxelTypeToColor)
+                {
+                    _voxelTypeToColor = FindObjectOfType<VoxelTypeToColor>();
+                }
+                return _voxelTypeToColor;
+            }
         }
 
         private void Start()
@@ -93,66 +114,29 @@ namespace VE.VoxelGen
                     VolumeData.WritePermissions.ReadWrite);
             }
 
-            float invRockScale = 1f / noiseScale;
+            MakeChunk(data);
 
-            var uvOffsetAsColor = FindObjectOfType<VoxelTypeToColor>();
-            if(!uvOffsetAsColor)
-            {
-                Debug.LogError("I need a 'UVOffsetAsColor' gameobject");
-                return null;
-            }
 
-            // It's best to create these outside of the loop.
-            QuantizedColor grass = new QuantizedColor(122, 122, 255, 255);
-            QuantizedColor red = new QuantizedColor(255, 0, 0, 255);
-            QuantizedColor gray = new QuantizedColor(127, 127, 127, 255);
-            QuantizedColor white = new QuantizedColor(255, 255, 255, 255);
-
-            grass = uvOffsetAsColor.getQuantizedColor(VoxelType.Grass);
-
-            // Iterate over every voxel of our volume
-            for (int z = 0; z < size.x; z++)
-            {
-                for (int y = 0; y < size.y; y++)
-                {
-                    for (int x = 0; x < size.z; x++)
-                    {
-
-                        // Simplex noise is quite high frequency. We scale the sample position to reduce this.
-                        float sampleX = x * invRockScale;
-                        float sampleY = y * invRockScale;
-                        float sampleZ = z * invRockScale;
-
-                        // range -1 to +1
-                        float simplexNoiseValue = SimplexNoise.Noise.Generate(sampleX, sampleY, sampleZ);
-
-                        float altitude = y / size.y;
-
-                        altitude -= .5f;
-                        altitude *= 2f;
-
-                        simplexNoiseValue += altitude;
-                        // mul by 5 and clamp?
-
-                        //simplexNoiseValue *= 5f;
-                        //simplexNoiseValue = Mathf.Clamp(simplexNoiseValue, -.5f, .5f);
-                        //simplexNoiseValue += .5f;
-                        //simplexNoiseValue *= 255;
-
-                        if (simplexNoiseValue > isSolidThreshhold)
-                        {
-                            data.SetVoxel(x, y, z, grass);
-                        }
-
-                    }
-                }
-            }
             data.CommitChanges();
 
+            
             
             return data;
         }
 
+        protected virtual void MakeChunk(ColoredCubesVolumeData data)
+        {
+            throw new Exception("please override MakeChunk() in a subclass of VEGenerateVolumeBase");
+        }
+
+        private void DebugCheckData(ColoredCubesVolumeData data)
+        {
+            for(int x = 0; x < 4; ++x)
+            {
+                var color = data.GetVoxel(x, 0, 0);
+                Debug.Log(color.ToString());
+            }
+        }
 
         private void DisplayVolume()
         {

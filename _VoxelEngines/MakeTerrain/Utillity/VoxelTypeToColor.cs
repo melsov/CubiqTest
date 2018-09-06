@@ -25,9 +25,19 @@ namespace VE.VoxelGen
             public VoxelType type;
             public Color color;
         }
+;
 
-        //[SerializeField, Header("Number of columns and rows in the tile map")]
-        //Vector2Int tileMapDimensions = new Vector2Int(4, 4);
+        //
+        // At some point, this program might want to use transparent or semi transparent colors.
+        // But if that's not the case, fully transparent colors can cause confusion
+        // because its easy to forget to slide the alpha slider in Unity and
+        // Cubiquity considers voxels with alpha = 0 to be empty / non-existent.
+        //
+        static bool IWantFullyTransparentColorForSomeReason {
+            get {
+                return false;
+            }
+        }
 
         [SerializeField, Header("Put one entry per voxel type here")]
         TypeAndColor[] colorsPerType = new TypeAndColor[1];
@@ -43,13 +53,13 @@ namespace VE.VoxelGen
                     {
                         if (!_lookup.ContainsKey(perType.type))
                         {
-                            _lookup.Add(perType.type, (QuantizedColor)perType.color);
-                                //new QuantizedColor(
-                                //(byte)(255 * (perType.offset.x / (float)tileMapDimensions.x)),
-                                //(byte)(255 * (perType.offset.y / (float)tileMapDimensions.y)),
-                                //0,
-                                //255)); // z and w coords mean nothing at the moment (w (alpha) is 255 incase this is ever used as an actual color)
-
+                            var qcolor = (QuantizedColor)perType.color;
+                            if (!IWantFullyTransparentColorForSomeReason)
+                            {
+                                qcolor.alpha = qcolor.alpha == 0 ? (byte)255 : qcolor.alpha;
+                            }
+                            _lookup.Add(perType.type, qcolor);
+                                
                         }
                     }
                 }

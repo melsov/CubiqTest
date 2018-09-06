@@ -6,7 +6,7 @@ Shader "Mel/ColoredCubesSimple"
 	{
 		_DiffuseMap ("Diffuse map", 2D) = "white" {}
 		_NormalMap ("Normal map", 2D) = "bump" {}
-
+		_NoiseStrength ("Noise strength", Range (0.0,0.5)) = 0.1 // not in use actually?
 	}
 	SubShader
 	{
