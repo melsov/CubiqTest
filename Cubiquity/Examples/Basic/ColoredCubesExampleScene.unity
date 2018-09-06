@@ -211,7 +211,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   volumeName: HeightMapTerrain
-  noiseScale: 42
+  noiseScale: 122
   isSolidThreshhold: 0.483
   size:
     x: 64
